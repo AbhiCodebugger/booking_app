@@ -3,7 +3,8 @@ package main
 import (
 	"booking_app/booking_app/helper"
 	"fmt"
-	"strconv"
+	"sync"
+	"time"
 )
 
 // conferenceName := "Go Conference" // Shorthand declaration
@@ -15,46 +16,56 @@ var remainingTickets uint = 50
 // var bookings = [50]string{} // Array of strings
 // var bookings []string // Slice of strings
 // bookings := []string{} // shorthand declaration for Slice of strings
-var bookings = make([]map[string]string, 0) // List of maps
+var bookings = make([]UserData, 0) // List of maps
+
+type UserData struct {
+	firstName       string
+	lastName        string
+	email           string
+	numberOfTickets uint
+}
 
 func main() {
 
 	greetUser()
 
-	for {
-		firstName, lastName, email, userTickets := getUserInput()
+	firstName, lastName, email, userTickets := getUserInput()
 
-		isValidName, isValidEmail, isValidUserTicket := helper.ValidateUserInput(firstName, lastName, email, userTickets, remainingTickets)
+	isValidName, isValidEmail, isValidUserTicket := helper.ValidateUserInput(firstName, lastName, email, userTickets, remainingTickets)
 
-		if isValidName && isValidEmail && isValidUserTicket {
+	if isValidName && isValidEmail && isValidUserTicket {
 
-			bookTickets(userTickets, firstName, lastName, email)
+		bookTickets(userTickets, firstName, lastName, email)
+		wg.Add(1)
+		go sendTicket(firstName, lastName, userTickets)
 
-			// Print first name of the user who have booked tickets
-			firstNames := getFirstNames()
-			fmt.Printf("Users who have booked tickets: %v\n", firstNames)
+		// Print first name of the user who have booked tickets
+		firstNames := getFirstNames()
+		fmt.Printf("Users who have booked tickets: %v\n", firstNames)
 
-			if remainingTickets == 0 {
-				fmt.Println("All tickets are booked. Thank you for booking.")
-				// end the program
-				break
-			}
-
-		} else {
-			if !isValidName {
-				fmt.Println("Please enter valid first name or last name.")
-			}
-			if !isValidEmail {
-				fmt.Println("Please enter a valid email address.")
-			}
-			if !isValidUserTicket {
-				fmt.Println("Please enter valid number of tickets.")
-			}
+		if remainingTickets == 0 {
+			fmt.Println("All tickets are booked. Thank you for booking.")
+			// end the program
 
 		}
-	}
 
+	} else {
+		if !isValidName {
+			fmt.Println("Please enter valid first name or last name.")
+		}
+		if !isValidEmail {
+			fmt.Println("Please enter a valid email address.")
+		}
+		if !isValidUserTicket {
+			fmt.Println("Please enter valid number of tickets.")
+		}
+
+	}
+	wg.Wait()
 }
+
+var wg = sync.WaitGroup{}
+
 func greetUser() {
 
 	fmt.Printf("Welcome to %v booking application!\n", conferenceName)
@@ -64,8 +75,8 @@ func greetUser() {
 
 func getFirstNames() []string {
 	firstNames := []string{}
-	for _, booking := range bookings {		
-		firstNames = append(firstNames, booking["firstName"])
+	for _, booking := range bookings {
+		firstNames = append(firstNames, booking.firstName)
 	}
 	return firstNames
 }
@@ -89,16 +100,27 @@ func getUserInput() (string, string, string, uint) {
 
 func bookTickets(userTickets uint, firstName string, lastName string, email string) {
 	remainingTickets = remainingTickets - userTickets
-	userData := make(map[string]string)
 
-	userData["firstName"] = firstName
-	userData["lastName"] = lastName
-	userData["email"] = email
-	userData["noOfTickets"] = strconv.FormatUint(uint64(userTickets), 10)
+	userData := UserData{
+		firstName:       firstName,
+		lastName:        lastName,
+		email:           email,
+		numberOfTickets: userTickets,
+	}
 
 	bookings = append(bookings, userData)
 	fmt.Printf("List of bookings %v\n", bookings)
 	fmt.Printf("Thank you %v %v for booking %v tickets. You will recieve confirmation email at %v \n", firstName, lastName, userTickets, email)
 	fmt.Printf("We have total of %v tickets and %v tickets are available.\n", conferenceTickets, remainingTickets)
 
+}
+
+func sendTicket(firstName string, lastName string, userTickets uint) {
+	// send ticket to the user
+	time.Sleep(10 * time.Second)
+	fmt.Println("================================")
+	ticket := fmt.Sprintf("%v tickets booked for %v %v", userTickets, firstName, lastName)
+	fmt.Println(ticket)
+	fmt.Println("================================")
+	wg.Done()
 }
