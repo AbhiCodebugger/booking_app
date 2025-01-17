@@ -3,16 +3,19 @@ package main
 import (
 	"booking_app/booking_app/helper"
 	"fmt"
-	"strings"
+	"strconv"
 )
 
 // conferenceName := "Go Conference" // Shorthand declaration
 const conferenceName = "Go Conference"
 const conferenceTickets uint = 50
+
 var remainingTickets uint = 50
+
 // var bookings = [50]string{} // Array of strings
-var bookings []string // Slice of strings
+// var bookings []string // Slice of strings
 // bookings := []string{} // shorthand declaration for Slice of strings
+var bookings = make([]map[string]string, 0) // List of maps
 
 func main() {
 
@@ -61,9 +64,8 @@ func greetUser() {
 
 func getFirstNames() []string {
 	firstNames := []string{}
-	for _, booking := range bookings {
-		var names = strings.Fields(booking)
-		firstNames = append(firstNames, names[0])
+	for _, booking := range bookings {		
+		firstNames = append(firstNames, booking["firstName"])
 	}
 	return firstNames
 }
@@ -87,8 +89,15 @@ func getUserInput() (string, string, string, uint) {
 
 func bookTickets(userTickets uint, firstName string, lastName string, email string) {
 	remainingTickets = remainingTickets - userTickets
-	bookings = append(bookings, firstName+" "+lastName)
+	userData := make(map[string]string)
 
+	userData["firstName"] = firstName
+	userData["lastName"] = lastName
+	userData["email"] = email
+	userData["noOfTickets"] = strconv.FormatUint(uint64(userTickets), 10)
+
+	bookings = append(bookings, userData)
+	fmt.Printf("List of bookings %v\n", bookings)
 	fmt.Printf("Thank you %v %v for booking %v tickets. You will recieve confirmation email at %v \n", firstName, lastName, userTickets, email)
 	fmt.Printf("We have total of %v tickets and %v tickets are available.\n", conferenceTickets, remainingTickets)
 
